@@ -4,7 +4,8 @@ interface
 
 uses
   System.IniFiles,
-  Provider.DadosConexao;
+  Provider.DadosConexao,
+  IdCoderMIME;
 
 type
   IArquivoIni = Interface
@@ -22,19 +23,23 @@ type
     FTag : String;
   public
     class function New: IArquivoIni;
-    constructor create;
-    destructor destroy; override;
+    constructor Create;
+    destructor Destroy; override;
     function NomeArquivo(const Value: string): IArquivoIni; overload;
     function NomeArquivo: string; overload;
     function Tag(const Value: string): IArquivoIni; overload;
     function Tag: string; overload;
     function BuscarParametro : TDadosConexao;
+    function Descriptografar(const aValue : String) : String;
   end;
 
 implementation
 
 uses
-  System.SysUtils, Vcl.Forms, Vcl.Dialogs;
+  System.SysUtils,
+  System.UITypes,
+  Vcl.Forms,
+  Vcl.Dialogs;
 
 { MinhaClasse }
 
@@ -44,7 +49,7 @@ var
   Configuracoes: TIniFile;
   DadosConexao : TDadosConexao;
 begin
-  ArquivoIni := ExtractFilePath(Application.ExeName) + FNomeArquivo;
+   ArquivoIni := ExtractFilePath(Application.ExeName) + FNomeArquivo;
   if not FileExists(ArquivoIni) then
   begin
     MessageDlg('Arquivo '+ FNomeArquivo + ' não encontrado!', mtInformation,
@@ -55,8 +60,12 @@ begin
   Configuracoes := TIniFile.Create(ArquivoIni);
   try
     DadosConexao.DataBase := Configuracoes.ReadString(FTag, 'Database', '');
+    if DadosConexao.DataBase = EmptyStr then
+      DadosConexao.DataBase := Configuracoes.ReadString(FTag, 'Database_PDV', '');
     DadosConexao.UserName := Configuracoes.ReadString(FTag, 'UserName', '');
     DadosConexao.PassWord := Configuracoes.ReadString(FTag, 'PassWord', '');
+    if Configuracoes.ReadString(FTag, 'usaCriptografia', '') = 'S' then
+      DadosConexao.PassWord := Descriptografar(DadosConexao.PassWord);
     DadosConexao.Porta    := Configuracoes.ReadInteger(FTag, 'Porta', 3050);
     DadosConexao.Timer := StrToInt(Configuracoes.ReadString(FTag, 'Tempo', '10000'));
   finally
@@ -71,7 +80,19 @@ begin
 
 end;
 
-destructor TArquivoIni.destroy;
+function TArquivoIni.Descriptografar(const aValue : String) : String;
+var
+  Decoder64: TIdDecoderMIME;
+begin
+  Decoder64 := TIdDecoderMIME.Create(nil);
+  try
+    Result := Decoder64.DecodeString(aValue);
+  finally
+    Decoder64.Free;
+  end;
+end;
+
+destructor TArquivoIni.Destroy;
 begin
 
   inherited;

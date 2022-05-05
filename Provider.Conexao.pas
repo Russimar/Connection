@@ -28,18 +28,15 @@ uses
 type
   TConnection = class(TInterfacedObject, iConnection)
   private
-    FDataBase : String;
-    FUserName : String;
-    FPassword : String;
     FTag : String;
-    FPort : Integer;
     FConn : TFDConnection;
     DadosConexao : TDadosConexao;
   public
     class function New(aTag : String): iConnection;
-    constructor create(aTag : String);
-    destructor destroy; override;
+    constructor Create(aTag : String);
+    destructor Destroy; override;
     function Connection : TCustomConnection;
+    function Config : String;
   end;
 
 implementation
@@ -49,11 +46,18 @@ uses
 
 { TConnection }
 
+function TConnection.Config: String;
+begin
+  Result := 'config.ini';
+  if FileExists(ExtractFilePath(ParamStr(0)) + 'parceiro.ini') then
+    Result := 'parceiro.ini';
+end;
+
 function TConnection.Connection: TCustomConnection;
 begin
   DadosConexao := TArquivoIni
                      .New
-                     .NomeArquivo('config.ini')
+                     .NomeArquivo(CONFIG)
                      .Tag(FTag)
                      .BuscarParametro;
   FConn.Params.Clear;
