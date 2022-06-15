@@ -59,15 +59,16 @@ begin
 
   Configuracoes := TIniFile.Create(ArquivoIni);
   try
-    DadosConexao.DataBase := Configuracoes.ReadString(FTag, 'Database', '');
+    DadosConexao.DataBase   := Configuracoes.ReadString(FTag, 'Database', '');
     if DadosConexao.DataBase = EmptyStr then
       DadosConexao.DataBase := Configuracoes.ReadString(FTag, 'Database_PDV', '');
-    DadosConexao.UserName := Configuracoes.ReadString(FTag, 'UserName', '');
-    DadosConexao.PassWord := Configuracoes.ReadString(FTag, 'PassWord', '');
+    DadosConexao.UserName   := Configuracoes.ReadString(FTag, 'UserName', '');
+    DadosConexao.PassWord   := Configuracoes.ReadString(FTag, 'PassWord', '');
     if Configuracoes.ReadString(FTag, 'usaCriptografia', '') = 'S' then
       DadosConexao.PassWord := Descriptografar(DadosConexao.PassWord);
-    DadosConexao.Porta    := Configuracoes.ReadInteger(FTag, 'Porta', 3050);
-    DadosConexao.Timer := StrToInt(Configuracoes.ReadString(FTag, 'Tempo', '10000'));
+    DadosConexao.Porta      := Configuracoes.ReadInteger(FTag, 'Porta', 3050);
+    DadosConexao.HostName   := Configuracoes.ReadString(FTag, 'HostName', '');
+    DadosConexao.Timer      := StrToInt(Configuracoes.ReadString(FTag, 'Tempo', '10000'));
   finally
     BuscarParametro := DadosConexao;
     Configuracoes.Free;

@@ -66,6 +66,7 @@ begin
   FConn.Params.Values['DataBase']  := DadosConexao.DataBase;
   FConn.Params.Values['User_Name'] := DadosConexao.UserName;
   FConn.Params.Values['Password']  := DadosConexao.PassWord;
+  FConn.Params.Values['Server']    := DadosConexao.HostName;
   FConn.Params.Values['Port']      := IntToStr(DadosConexao.Porta);
   try
     FConn.Connected := True;

@@ -11,6 +11,7 @@ type
     Usuario : String;
     Senha : String;
     Porta : Integer;
+    HostName : String;
   end;
 
   TDadosScanntech = record
