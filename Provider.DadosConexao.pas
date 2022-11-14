@@ -12,6 +12,7 @@ type
     Senha : String;
     Porta : Integer;
     HostName : String;
+    Dialect  : Integer;
   end;
 
   TDadosScanntech = record

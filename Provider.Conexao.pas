@@ -14,8 +14,11 @@ uses
   FireDAC.Stan.Async,
   FireDAC.Phys,
   FireDAC.Phys.FBDef,
-  FireDAC.VCLUI.Wait,
+  {$If defined(FMX)}
   FireDAC.FMXUI.Wait,
+  {$Else}
+  FireDAC.VCLUI.Wait,
+  {$ENDIF}
   FireDAC.Comp.UI,
   FireDAC.Phys.IBBase,
   FireDAC.Phys.FB,
@@ -23,7 +26,8 @@ uses
   FireDAC.Comp.Client,
   System.Generics.Collections,
   Provider.DadosConexao,
-  Provider.ArquivoIni;
+  Provider.ArquivoIni,
+  GravarLog;
 
 type
   TConnection = class(TInterfacedObject, iConnection)
@@ -68,12 +72,14 @@ begin
   FConn.Params.Values['Password']  := DadosConexao.PassWord;
   FConn.Params.Values['Server']    := DadosConexao.HostName;
   FConn.Params.Values['Port']      := IntToStr(DadosConexao.Porta);
+  FConn.Params.Values['SQLDialect']:= IntToStr(DadosConexao.Dialect);
   try
     FConn.Connected := True;
     Result := FConn;
   except
     on E : Exception do
     begin
+      TGravarLog.New.doSaveLog('Erro ao conectar ao banco de dados: ' + E.Message);
       Result := nil;
       exit;
     end;

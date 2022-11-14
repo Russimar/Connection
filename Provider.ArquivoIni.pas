@@ -37,9 +37,14 @@ implementation
 
 uses
   System.SysUtils,
-  System.UITypes,
-  Vcl.Forms,
-  Vcl.Dialogs;
+  {$If defined(FMX)}
+    FMX.Forms,
+    FMX.Dialogs,
+  {$Else}
+    Vcl.Forms,
+    Vcl.Dialogs,
+  {$EndIf}
+  System.UITypes;
 
 { MinhaClasse }
 
@@ -49,11 +54,16 @@ var
   Configuracoes: TIniFile;
   DadosConexao : TDadosConexao;
 begin
-   ArquivoIni := ExtractFilePath(Application.ExeName) + FNomeArquivo;
+   ArquivoIni := ExtractFilePath(ParamStr(0)) + FNomeArquivo;
   if not FileExists(ArquivoIni) then
   begin
+  {$If defined(FMX)}
+    MessageDlg('Arquivo '+ FNomeArquivo + ' não encontrado!', TMsgDlgType.mtInformation,
+      [TMsgDlgBtn.mbOK], 0);
+  {$Else}
     MessageDlg('Arquivo '+ FNomeArquivo + ' não encontrado!', mtInformation,
       [mbOK], 0);
+  {$EndIf}
     Exit;
   end;
 
@@ -69,6 +79,7 @@ begin
     DadosConexao.Porta      := Configuracoes.ReadInteger(FTag, 'Porta', 3050);
     DadosConexao.HostName   := Configuracoes.ReadString(FTag, 'HostName', '');
     DadosConexao.Timer      := StrToInt(Configuracoes.ReadString(FTag, 'Tempo', '10000'));
+    DadosConexao.Dialect    := Configuracoes.ReadInteger(FTag, 'Dialect', 1);
   finally
     BuscarParametro := DadosConexao;
     Configuracoes.Free;
