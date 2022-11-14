@@ -23,7 +23,8 @@ uses
   FireDAC.Comp.Client,
   System.Generics.Collections,
   Provider.DadosConexao,
-  Provider.ArquivoIni;
+  Provider.ArquivoIni,
+  GravarLog;
 
 type
   TConnection = class(TInterfacedObject, iConnection)
@@ -74,6 +75,7 @@ begin
   except
     on E : Exception do
     begin
+      TGravarLog.New.doSaveLog(E.Message + ' - ' + DadosConexao.DataBase);
       Result := nil;
       exit;
     end;
