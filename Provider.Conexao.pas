@@ -14,8 +14,11 @@ uses
   FireDAC.Stan.Async,
   FireDAC.Phys,
   FireDAC.Phys.FBDef,
-  FireDAC.VCLUI.Wait,
+  {$If defined(FMX)}
   FireDAC.FMXUI.Wait,
+  {$Else}
+  FireDAC.VCLUI.Wait,
+  {$ENDIF}
   FireDAC.Comp.UI,
   FireDAC.Phys.IBBase,
   FireDAC.Phys.FB,
@@ -69,6 +72,7 @@ begin
   FConn.Params.Values['Password']  := DadosConexao.PassWord;
   FConn.Params.Values['Server']    := DadosConexao.HostName;
   FConn.Params.Values['Port']      := IntToStr(DadosConexao.Porta);
+  FConn.Params.Values['SQLDialect']:= IntToStr(DadosConexao.Dialect);
   try
     FConn.Connected := True;
     Result := FConn;
