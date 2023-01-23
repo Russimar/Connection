@@ -20,6 +20,7 @@ type
     URLMovimento  : String;
     URLFechamento : String;
     URLPromocao   : String;
+    url : String
   end;
 
 implementation
