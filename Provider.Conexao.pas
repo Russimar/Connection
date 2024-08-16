@@ -27,6 +27,7 @@ uses
   System.Generics.Collections,
   Provider.DadosConexao,
   Provider.ArquivoIni,
+  vcl.Dialogs,
   GravarLog;
 
 type
@@ -79,6 +80,7 @@ begin
   except
     on E : Exception do
     begin
+      FConn.Connected := False;
       TGravarLog.New.doSaveLog(E.Message + ' - ' + DadosConexao.DataBase);
       Result := nil;
       exit;
@@ -88,9 +90,10 @@ end;
 
 constructor TConnection.create(aTag : String);
 begin
+  ReportMemoryLeaksOnShutdown := DebugHook <> 0;
   FConn := TFDConnection.Create(nil);
   if aTag = EmptyStr then
-    raise Exception.Create('Informar a taga para acesso no banco');
+    raise Exception.Create('Informar a tag para acesso no banco');
   FTag := aTag;
 end;
 
