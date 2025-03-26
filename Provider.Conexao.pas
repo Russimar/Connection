@@ -68,6 +68,7 @@ begin
   FConn.Params.Clear;
   FConn.DriverName                 := 'FB';
   FConn.Params.Values['DriveId']   := 'FB';
+  FConn.Params.Values['Protocol']  := 'tcpIp';
   FConn.Params.Values['DataBase']  := DadosConexao.DataBase;
   FConn.Params.Values['User_Name'] := DadosConexao.UserName;
   FConn.Params.Values['Password']  := DadosConexao.PassWord;
