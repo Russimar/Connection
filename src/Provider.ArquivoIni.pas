@@ -79,7 +79,7 @@ begin
     DadosConexao.Porta      := Configuracoes.ReadInteger(FTag, 'Porta', 3050);
     DadosConexao.HostName   := Configuracoes.ReadString(FTag, 'HostName', '');
     DadosConexao.Timer      := StrToInt(Configuracoes.ReadString(FTag, 'Tempo', '10000'));
-    DadosConexao.Dialect    := Configuracoes.ReadInteger(FTag, 'Dialect', 1);
+    DadosConexao.Dialect    := Configuracoes.ReadInteger(FTag, 'Dialect', 3);
   finally
     BuscarParametro := DadosConexao;
     Configuracoes.Free;
