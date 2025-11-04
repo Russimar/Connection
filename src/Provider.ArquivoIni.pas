@@ -53,6 +53,7 @@ var
   ArquivoIni : String;
   Configuracoes: TIniFile;
   DadosConexao : TDadosConexao;
+  LDatabasePartes: TArray<string>;
 begin
    ArquivoIni := ExtractFilePath(ParamStr(0)) + FNomeArquivo;
   if not FileExists(ArquivoIni) then
@@ -72,19 +73,27 @@ begin
     DadosConexao.DataBase   := Configuracoes.ReadString(FTag, 'Database', '');
     if DadosConexao.DataBase = EmptyStr then
       DadosConexao.DataBase := Configuracoes.ReadString(FTag, 'Database_PDV', '');
+    DadosConexao.HostName   := Configuracoes.ReadString(FTag, 'HostName', '');
+
+    LDatabasePartes := DadosConexao.DataBase.Split([':']);
+    if Length(LDatabasePartes) >= 2 then
+    begin
+      DadosConexao.HostName := LDatabasePartes[0];
+      // Junta o restante se houver mais partes
+      DadosConexao.DataBase := string.Join(':', Copy(LDatabasePartes, 1, Pred(Length(LDatabasePartes))));
+    end;
+
     DadosConexao.UserName   := Configuracoes.ReadString(FTag, 'UserName', '');
     DadosConexao.PassWord   := Configuracoes.ReadString(FTag, 'PassWord', '');
     if Configuracoes.ReadString(FTag, 'usaCriptografia', '') = 'S' then
       DadosConexao.PassWord := Descriptografar(DadosConexao.PassWord);
     DadosConexao.Porta      := Configuracoes.ReadInteger(FTag, 'Porta', 3050);
-    DadosConexao.HostName   := Configuracoes.ReadString(FTag, 'HostName', '');
     DadosConexao.Timer      := StrToInt(Configuracoes.ReadString(FTag, 'Tempo', '10000'));
     DadosConexao.Dialect    := Configuracoes.ReadInteger(FTag, 'Dialect', 3);
   finally
     BuscarParametro := DadosConexao;
     Configuracoes.Free;
   end;
-
 end;
 
 constructor TArquivoIni.create;
