@@ -75,6 +75,7 @@ begin
   FConn.Params.Values['Server']    := DadosConexao.HostName;
   FConn.Params.Values['Port']      := IntToStr(DadosConexao.Porta);
   FConn.Params.Values['SQLDialect']:= IntToStr(DadosConexao.Dialect);
+  FConn.Params.Values['CharacterSet'] := DadosConexao.CharacterSet;
   try
     FConn.Connected := True;
     Result := FConn;

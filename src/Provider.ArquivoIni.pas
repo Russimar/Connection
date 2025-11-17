@@ -90,6 +90,7 @@ begin
     DadosConexao.Porta      := Configuracoes.ReadInteger(FTag, 'Porta', 3050);
     DadosConexao.Timer      := StrToInt(Configuracoes.ReadString(FTag, 'Tempo', '10000'));
     DadosConexao.Dialect    := Configuracoes.ReadInteger(FTag, 'Dialect', 3);
+    DadosConexao.CharacterSet := Configuracoes.ReadString(FTag, 'CharacterSet', 'WIN1252');	
   finally
     BuscarParametro := DadosConexao;
     Configuracoes.Free;
