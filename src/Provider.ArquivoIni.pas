@@ -76,7 +76,7 @@ begin
     DadosConexao.HostName   := Configuracoes.ReadString(FTag, 'HostName', '');
 
     LDatabasePartes := DadosConexao.DataBase.Split([':']);
-    if Length(LDatabasePartes) >= 2 then
+    if Length(LDatabasePartes) > 2 then
     begin
       DadosConexao.HostName := LDatabasePartes[0];
       // Junta o restante se houver mais partes
