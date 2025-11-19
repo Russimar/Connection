@@ -13,6 +13,7 @@ type
     Porta : Integer;
     HostName : String;
     Dialect  : Integer;
+    CharacterSet: string;	
   end;
 
   TDadosScanntech = record
