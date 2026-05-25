@@ -8,8 +8,7 @@ uses
   {$ELSE}
   IniFiles,
   {$IFEND}
-  Provider.DadosConexao,
-  IdCoderMIME;
+  Provider.DadosConexao;
 
 type
   IArquivoIni = Interface
@@ -54,7 +53,7 @@ uses
   Forms,
   Dialogs,
   {$IFEND}
-  ;
+  IdCoderMIME;
 
 type
   TStringPartes = array of string;
