@@ -27,7 +27,6 @@ uses
   System.Generics.Collections,
   Provider.DadosConexao,
   Provider.ArquivoIni,
-  vcl.Dialogs,
   GravarLog;
 
 type
@@ -62,7 +61,7 @@ function TConnection.Connection: TCustomConnection;
 begin
   DadosConexao := TArquivoIni
                      .New
-                     .NomeArquivo(CONFIG)
+                     .NomeArquivo(Self.Config)
                      .Tag(FTag)
                      .BuscarParametro;
   FConn.Params.Clear;
@@ -76,6 +75,10 @@ begin
   FConn.Params.Values['Port']      := IntToStr(DadosConexao.Porta);
   FConn.Params.Values['SQLDialect']:= IntToStr(DadosConexao.Dialect);
   FConn.Params.Values['CharacterSet'] := DadosConexao.CharacterSet;
+
+  if (DadosConexao.HostName = EmptyStr) and not FileExists(DadosConexao.DataBase) then
+    raise Exception.CreateFmt('Banco de dados não encontrado no caminho: %s', [DadosConexao.DataBase]);
+
   try
     FConn.Connected := True;
     Result := FConn;
@@ -84,15 +87,16 @@ begin
     begin
       FConn.Connected := False;
       TGravarLog.New.doSaveLog(E.Message + ' - ' + DadosConexao.DataBase);
-      Result := nil;
-      exit;
+      raise Exception.CreateFmt('Falha ao conectar em "%s": %s', [DadosConexao.DataBase, E.Message]);
     end;
   end;
 end;
 
 constructor TConnection.create(aTag : String);
 begin
+  {$IFDEF MSWINDOWS}
   ReportMemoryLeaksOnShutdown := DebugHook <> 0;
+  {$ENDIF}
   FConn := TFDConnection.Create(nil);
   if aTag = EmptyStr then
     raise Exception.Create('Informar a tag para acesso no banco');

@@ -1,17 +1,17 @@
-Ôªøunit Provider.GerenciadorConexao;
+unit Provider.GerenciadorConexao;
 
-{ Pool de conex√µes thread-local com limpeza autom√°tica por inatividade.
+{ Pool de conexıes thread-local com limpeza autom·tica por inatividade.
 
-  Cada thread do servidor HTTP (Indy) obt√©m sua pr√≥pria conex√£o Firebird.
-  N√£o h√° bloqueio entre threads ‚Äî sem conten√ß√£o, sem fila de espera.
+  Cada thread do servidor HTTP (Indy) obtÈm sua prÛpria conex„o Firebird.
+  N„o h· bloqueio entre threads ó sem contenÁ„o, sem fila de espera.
 
-  Conex√µes inativas por mais de MaxIdleSegundos s√£o fechadas automaticamente
-  por TThreadLimpeza, liberando recursos sem interven√ß√£o manual.
+  Conexıes inativas por mais de MaxIdleSegundos s„o fechadas automaticamente
+  por TThreadLimpeza, liberando recursos sem intervenÁ„o manual.
 
-  Baseado em Core.Connection do ClientIntegrador, evolu√≠do para pool por thread.
+  Baseado em Core.Connection do ClientIntegrador, evoluÌdo para pool por thread.
 
   USO: substituir TConnection.New('TAG') por TGerenciadorConexao.New('TAG') no Bootstrap.
-  TConnection, TQuery e todos os demais arquivos permanecem sem altera√ß√£o. }
+  TConnection, TQuery e todos os demais arquivos permanecem sem alteraÁ„o. }
 
 interface
 
@@ -25,18 +25,18 @@ uses
   FireDAC.Comp.Client, Data.DB;
 
 type
-  { Item mantido no pool: uma conex√£o Firebird por thread }
+  { Item mantido no pool: uma conex„o Firebird por thread }
   TItemConexao = class
   public
-    Conexao   : iConnection;    { TConnection ‚Äî dono do TFDConnection }
-    FDConn    : TFDConnection;  { refer√™ncia cacheada para checagem r√°pida }
+    Conexao   : iConnection;    { TConnection ó dono do TFDConnection }
+    FDConn    : TFDConnection;  { referÍncia cacheada para checagem r·pida }
     UltimoUso : TDateTime;
   end;
 
-  { Thread de limpeza ‚Äî fecha conex√µes inativas periodicamente }
+  { Thread de limpeza ó fecha conexıes inativas periodicamente }
   TThreadLimpeza = class(TThread)
   private
-    FGerenciador : TObject;   { TGerenciadorConexao ‚Äî evita depend√™ncia de tipo circular }
+    FGerenciador : TObject;   { TGerenciadorConexao ó evita dependÍncia de tipo circular }
     FEvento      : TEvent;    { sinalizado no SolicitarParada para acordar imediatamente }
     FIntervaloMs : Cardinal;
   protected
@@ -47,7 +47,7 @@ type
     procedure SolicitarParada;
   end;
 
-  { Pool thread-local de conex√µes Firebird.
+  { Pool thread-local de conexıes Firebird.
     Implementa iConnection para ser injetado no lugar de TConnection no Bootstrap. }
   TGerenciadorConexao = class(TInterfacedObject, iConnection)
   strict private
@@ -98,7 +98,7 @@ procedure TThreadLimpeza.Execute;
 begin
   while not Terminated do
   begin
-    FEvento.WaitFor(FIntervaloMs);   { aguarda intervalo OU sinaliza√ß√£o de parada }
+    FEvento.WaitFor(FIntervaloMs);   { aguarda intervalo OU sinalizaÁ„o de parada }
     if not Terminated then
       TGerenciadorConexao(FGerenciador).LimparInativas;
   end;
@@ -119,7 +119,7 @@ begin
   FMaxIdleSegundos := AMaxIdleSegundos;
   FLock            := TCriticalSection.Create;
   FPool            := TDictionary<Cardinal, TItemConexao>.Create;
-  { Limpeza a cada 30 segundos (metade do tempo m√°ximo de inatividade padr√£o) }
+  { Limpeza a cada 30 segundos (metade do tempo m·ximo de inatividade padr„o) }
   FThreadLimpeza   := TThreadLimpeza.Create(Self, 30000);
 end;
 
@@ -135,7 +135,7 @@ begin
   try
     for LItem in FPool.Values do
     begin
-      LItem.Conexao := nil;  { libera iConnection ‚Üí TConnection.Destroy ‚Üí FConn.Free }
+      LItem.Conexao := nil;  { libera iConnection -> TConnection.Destroy -> FConn.Free }
       LItem.Free;
     end;
     FreeAndNil(FPool);
@@ -156,7 +156,7 @@ begin
 
   FLock.Enter;
   try
-    { Caminho r√°pido: conex√£o existente para esta thread e ainda ativa }
+    { Caminho r·pido: conex„o existente para esta thread e ainda ativa }
     if FPool.TryGetValue(LThreadID, LItem) then
     begin
       if Assigned(LItem.FDConn) and LItem.FDConn.Connected then
@@ -165,14 +165,14 @@ begin
         Result := LItem.FDConn;
         Exit;
       end;
-      { Conex√£o caiu ‚Äî remove do pool e cria nova abaixo }
+      { Conex„o caiu ó remove do pool e cria nova abaixo }
       LItem.Conexao := nil;
       LItem.Free;
       FPool.Remove(LThreadID);
     end;
 
-    { Nova conex√£o para esta thread.
-      TConnection.New e .Connection() s√£o chamados sem modifica√ß√£o alguma. }
+    { Nova conex„o para esta thread.
+      TConnection.New e .Connection() s„o chamados sem modificaÁ„o alguma. }
     LItem         := TItemConexao.Create;
     LItem.Conexao := TConnection.New(FTag);
     LConn         := LItem.Conexao.Connection;
@@ -207,7 +207,7 @@ begin
       for LThreadID in LParaRemover do
       begin
         LItem         := FPool[LThreadID];
-        LItem.Conexao := nil;   { fecha a conex√£o Firebird }
+        LItem.Conexao := nil;   { fecha a conex„o Firebird }
         LItem.Free;
         FPool.Remove(LThreadID);
       end;

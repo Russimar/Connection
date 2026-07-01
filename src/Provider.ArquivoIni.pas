@@ -41,17 +41,8 @@ implementation
 uses
   {$IF CompilerVersion >= 23}
   System.SysUtils,
-  {$IFDEF FMX}
-  FMX.Forms,
-  FMX.Dialogs,
-  {$ELSE}
-  Vcl.Forms,
-  Vcl.Dialogs,
-  {$ENDIF}
   {$ELSE}
   SysUtils,
-  Forms,
-  Dialogs,
   {$IFEND}
   IdCoderMIME;
 
@@ -108,19 +99,13 @@ var
 begin
   ArquivoIni := ExtractFilePath(ParamStr(0)) + FNomeArquivo;
   if not FileExists(ArquivoIni) then
-  begin
-  {$IFDEF FMX}
-    MessageDlg('Arquivo '+ FNomeArquivo + ' nï¿½o encontrado!', TMsgDlgType.mtInformation,
-      [TMsgDlgBtn.mbOK], 0);
-  {$ELSE}
-    MessageDlg('Arquivo '+ FNomeArquivo + ' nï¿½o encontrado!', mtInformation,
-      [mbOK], 0);
-  {$ENDIF}
-    Exit;
-  end;
+    raise Exception.CreateFmt('Arquivo de configuração não encontrado: %s', [ArquivoIni]);
 
   Configuracoes := TIniFile.Create(ArquivoIni);
   try
+    if not Configuracoes.SectionExists(FTag) then
+      raise Exception.CreateFmt('TAG [%s] não encontrada em %s', [FTag, ArquivoIni]);
+
     // Leitura bruta dos valores do INI
     LDatabase := Configuracoes.ReadString(FTag, 'Database', '');
     if LDatabase = EmptyStr then
@@ -148,7 +133,7 @@ begin
     end
     else if Pos(':', LHostName) > 0 then
     begin
-      // Situacao 2: HostName contem porta â€” Ex: "192.168.1.1:3050"
+      // Situacao 2: HostName contem porta — Ex: "192.168.1.1:3050"
       LPartes         := SplitStr(LHostName, ':');
       LPortaCandidata := StrToIntDef(LPartes[1], 0);
       if (Length(LPartes) = 2) and (LPortaCandidata > 0) then
@@ -157,7 +142,10 @@ begin
         LPorta    := LPortaCandidata;
       end;
     end;
-    // Situacao 3: HostName e Porta ja estao separados â€” nenhuma acao necessaria
+    // Situacao 3: HostName e Porta ja estao separados — nenhuma acao necessaria
+
+    if LDatabase = EmptyStr then
+      raise Exception.CreateFmt('Parâmetro Database (ou Database_PDV) ausente/vazio na TAG [%s] de %s', [FTag, ArquivoIni]);
 
     DadosConexao.DataBase     := LDatabase;
     DadosConexao.HostName     := LHostName;
@@ -166,7 +154,7 @@ begin
     DadosConexao.PassWord     := Configuracoes.ReadString(FTag, 'PassWord', '');
     if Configuracoes.ReadString(FTag, 'usaCriptografia', '') = 'S' then
       DadosConexao.PassWord   := Descriptografar(DadosConexao.PassWord);
-    DadosConexao.Timer        := StrToInt(Configuracoes.ReadString(FTag, 'Tempo', '10000'));
+    DadosConexao.Timer        := StrToIntDef(Configuracoes.ReadString(FTag, 'Tempo', '10000'), 10000);
     DadosConexao.Dialect      := Configuracoes.ReadInteger(FTag, 'Dialect', 3);
     DadosConexao.CharacterSet := Configuracoes.ReadString(FTag, 'CharacterSet', 'WIN1252');
   finally

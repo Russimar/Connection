@@ -26,7 +26,7 @@ type
   public
     class function New(Parent: iConnection): iQuery;
     constructor create(Parent: iConnection);
-    destructor destroy; override;
+    destructor Destroy; override;
     function SQL(Value: String): iQuery;
     function Query: TFDQuery;
     function DataSet: TDataSet;
@@ -38,8 +38,7 @@ type
 implementation
 
 uses
-  System.SysUtils,
-  vcl.Dialogs;
+  System.SysUtils;
 
 { MinhaClasse }
 
@@ -63,7 +62,7 @@ begin
   Result := FQuery;
 end;
 
-destructor TQuery.destroy;
+destructor TQuery.Destroy;
 begin
   FreeAndNil(FQuery);
   inherited;
@@ -83,12 +82,12 @@ end;
 function TQuery.Open: TFDQuery;
 begin
   FQuery.Open();
+  Result := FQuery;
 end;
 
 function TQuery.Query: TFDQuery;
 begin
-//  Result := Self.create();
-
+  Result := FQuery;
 end;
 
 function TQuery.SQL(Value: String): iQuery;
