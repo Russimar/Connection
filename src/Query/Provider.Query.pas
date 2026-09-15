@@ -38,7 +38,8 @@ type
 implementation
 
 uses
-  System.SysUtils;
+  System.SysUtils,
+  Provider.Excecoes;
 
 { MinhaClasse }
 
@@ -49,12 +50,32 @@ begin
 end;
 
 constructor TQuery.create(Parent: iConnection);
+var
+  LConexao : TCustomConnection;
 begin
+  { A-01: o fallback para uma TAG literal gravada na biblioteca foi removido.
+    Um TQuery construido sem Parent conectava silenciosamente a um banco que o
+    chamador nunca pediu - e, quando falhava, a mensagem citava uma TAG alheia.
+    Agora o Parent e obrigatorio. }
+  if not Assigned(Parent) then
+    raise EConnectionException.Create(
+      'TQuery exige uma conexao (Parent). Informe TConnection.New(''SUA_TAG'') ' +
+      'ou TGerenciadorConexao.New(''SUA_TAG'').');
+
   FParent := Parent;
-  if not Assigned(FParent) then
-    FParent := TConnection.New('PDV');
-  FQuery := TFDQuery.create(nil);
-  FQuery.Connection := FParent.Connection as TFDCustomConnection;
+  FQuery  := TFDQuery.create(nil);
+
+  { Defesa em profundidade: pelo contrato de iConnection, Connection nunca
+    devolve nil. Se uma implementacao violar o contrato, o cast direto
+    devolveria nil silenciosamente (nil as T e nil em Object Pascal) e a falha
+    so apareceria no Open, longe da causa. }
+  LConexao := FParent.Connection;
+  if not Assigned(LConexao) then
+    raise EConnectionException.Create(
+      'A implementacao de iConnection devolveu nil, violando o contrato: ' +
+      'Connection deve levantar excecao em vez de devolver nil.');
+
+  FQuery.Connection := LConexao as TFDCustomConnection;
 end;
 
 function TQuery.DataSet: TDataSet;

@@ -68,3 +68,11 @@ __recovery/
 # Boss dependency manager vendor folder https://github.com/HashLoad/boss
 modules/
 boss-lock.json
+
+# Suite de testes (tests/)
+# O dcc32.cfg do harness e versionado de proposito: sem ele o build por
+# dcc32 nao encontra DUnitX, FireDAC nem os fontes da lib. A regra *.cfg
+# acima ignora .cfg gerados pela IDE, nao este.
+!tests/dcc32.cfg
+# Artefatos de execucao da suite
+tests/Win32/

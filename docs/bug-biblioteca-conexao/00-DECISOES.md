@@ -1,0 +1,53 @@
+# Decisões — bug-biblioteca-conexao
+
+> Uma linha por decisão tomada no planejamento (F2 e, excepcionalmente, F3). Formato fixo. Não apague decisões: uma decisão revertida ganha nova linha que cita a anterior.
+
+## Decisões
+
+```
+D-01 | Escopo: corrigir TODOS os 9 achados da auditoria (R-01, A-00, A-01, A-02, A-03, A-04, A-05, R-02, R-03) | recorte só por severidade Alta, ou Alta+Média | usuário optou por fechar a auditoria inteira de uma vez (P-01)
+D-02 | Correção sai neste repositório (clone local de github.com/russimar/connection), publicada como nova tag | fork + PR; vendorizar a lib dentro do consumidor | usuário confirmou ter permissão de commit aqui (P-02); resolve a lacuna L-05
+D-03 | Criar projeto de testes DUnitX próprio no repositório | testar só BuscarParametro; validar tudo manualmente sem automação | regra 3 (TDD) e regra 13 (primeira sprint entrega a capacidade de testar) do método (P-03); resolve L-01
+D-04 | Alvo de compilação: Delphi 10.4 Sydney, Win32 | 11 Alexandria; 12 Athens; Win64 | é a versão disponível na máquina do usuário (P-04); resolve L-02
+D-05 | Projeto de teste fica em tests/ na raiz, runner de console | projeto GUI DUnitX; tests dentro de src/ | usuário confirmou console em tests/ (P-13)
+D-06 | A-01a: remover o fallback para a TAG literal PDV; TQuery com Parent nil passa a levantar exceção exigindo o Parent | manter o fallback; torná-lo configurável por constante pública | usuário escolheu a opção A (P-05a); quebra intencional de compatibilidade, aceita
+D-07 | A-01b: validar Assigned antes do cast em TQuery.create e levantar exceção nomeando a TAG | manter o cast direto | defesa em profundidade; o cast sobre nil devolve nil silenciosamente e adia a falha até o Open (ver D-22)
+D-08 | A-03: criar método que permite ao consumidor DIZER qual arquivo INI usar; se não for acionado, mantém a lógica atual (parceiro.ini tem precedência sobre config.ini) | remover a precedência; exigir chave explícita no INI para ativar parceiro.ini | não quebra consumidores existentes e dá controle manual a quem quiser (P-05b)
+D-09 | A-03: o caminho do INI resolvido e a escolha do arquivo entram em iConnection (contrato uniforme), não apenas em TConnection | expor só em TConnection; apenas logar sem expor | usuário escolheu B e reconfirmou após o alerta de quebra (P-05c, P-14)
+D-10 | Implementações externas de iConnection que quebrarem com os novos métodos serão corrigidas depois, fora desta sprint | limitar as mudanças a alterações compatíveis | decisão explícita do usuário (P-14); ver PENDENTE-01
+D-11 | A-04: criar EConnectionException (herdando de Exception), com campos extras de diagnóstico além da mensagem | manter Exception genérica; exceção sem campos extras | usuário confirmou e pediu campos que auxiliem a análise do erro (P-05d)
+D-12 | R-03: remover ReportMemoryLeaksOnShutdown do construtor de TConnection; a decisão passa a ser do .dpr do consumidor | manter por compatibilidade | usuário confirmou remover (P-05e)
+D-13 | R-01: se FConn.Connected já for True, Connection devolve a conexão existente sem reler o INI nem tocar nos Params | manter a releitura a cada chamada | corrige a perda silenciosa de transação (erro -514), achado de severidade Alta (P-06)
+D-14 | R-01: método explícito de recarga de parâmetros chamado Reconectar | RecarregarParametros; sem método de recarga | nome escolhido pelo usuário (P-06)
+D-15 | Reconectar entra em iConnection | ficar só em TConnection | coerente com D-09 (P-07)
+D-16 | A-02: remover o ramo else morto e envolver a criação do item em try/except que libera o TItemConexao e repropaga a exceção original com raise; TGerenciadorConexao.Connection nunca mais devolve nil | manter o retorno nil do pool | fecha o contrato de iConnection e elimina o vazamento por tentativa de conexão falha (P-08)
+D-17 | Consumidores que hoje dependam de receber nil do pool serão ajustados depois pelo usuário | preservar o retorno nil por compatibilidade | decisão explícita do usuário (P-08)
+D-18 | R-02: apenas documentar que usaCriptografia=S é Base64 (ofuscação, não criptografia), no CLAUDE.md e em comentário no código; nenhuma mudança de comportamento | aceitar chave nova senhaCodificada como sinônimo; implementar criptografia real | usuário escolheu A; não quebra nenhum INI existente (P-09)
+D-19 | A-05: inicializar DadosConexao com Default(TDadosConexao), mover a atribuição do Result para o fim do bloco try e deixar o finally apenas com Configuracoes.Free | manter a atribuição dentro do finally | correção mecânica, sem mudança de comportamento (P-10a)
+D-20 | Remover os campos Usuario e Senha de TDadosConexao | mantê-los e marcá-los como obsoletos | nunca são atribuídos nem lidos em src/; duplicam UserName/PassWord e aumentam o risco de lixo de pilha (P-10b); resolve L-09
+D-21 | A-00: atualizar o CLAUDE.md (corrigir a afirmação falsa sobre retorno nil e a lista de 5 defeitos já corrigidos) e REMOVER a referência a plano_connection.md | recriar plano_connection.md; obter o arquivo de outro checkout | usuário escolheu A (P-11); resolve L-03
+D-22 | Registrar no plano que a SPEC erra ao afirmar que o operador as sobre nil levanta EInvalidCast: em Object Pascal esse cast devolve nil silenciosamente; o teste de A-01 deve comprovar falha tardia no Open, não EInvalidCast | seguir a SPEC literalmente | semântica da linguagem verificada em src/Query/Provider.Query.pas:57 (lacuna L-06)
+D-23 | Definição de pronto: suíte DUnitX verde + os 9 achados corrigidos + CLAUDE.md atualizado + tag v1.0.9 preparada | entrega parcial por severidade | usuário aceitou a sugestão (P-12)
+D-24 | NÃO commitar nem criar/publicar a tag: o usuário valida antes; a execução deixa a árvore de trabalho pronta e para | commitar e taguear ao fim da execução | exigência explícita do usuário (P-12); resolve parcialmente L-07
+D-25 | Os testes cobrem com E sem banco; a existência de um ambiente Firebird válido é pré-condição de ambiente — teste vermelho por ambiente ausente é resultado correto, não falso negativo | apenas testes unitários sem banco | definição do usuário (P-13)
+D-26 | O próprio harness cria o banco temporário, gera o .ini, roda os testes e apaga tudo ao fim; nenhum config.ini pré-existente é necessário | depender de config.ini versionado ou preparado à mão | proposta do usuário (P-15); elimina a necessidade de versionar credenciais e resolve L-04 parcialmente
+D-27 | Criação do banco temporário via isql.exe da versão alvo, por linha de comando, em pasta temporária | FireDAC CreateDatabase | um processo carrega um único fbclient.dll, e fbclient 2.5 não conversa com servidor 5.0; isql externo permite testar as três versões (P-17)
+D-28 | A suíte roda contra TODAS as versões de Firebird presentes na máquina (nesta: 2.5 na porta 3050, 4.0 na 3051, 5.0 na 3052) | testar só contra uma versão fixa | usuário quer matriz multi-versão (P-16); portas confirmadas em firebird.conf e em escuta real
+D-29 | Uma execução do runner por versão de Firebird, com alvo recebido por parâmetro; um .bat orquestra a matriz | testar as três versões no mesmo processo | restrição técnica do fbclient.dll único por processo (ver D-27)
+D-30 | Versão de Firebird ausente na máquina é marcada como skipped e o conjunto permanece verde | falhar quando faltar versão; exigir 2.5 como mínimo obrigatório | usuário escolheu A (P-18); máquinas com só o 2.5 são cenário previsto
+D-31 | Detecção automática dos ambientes: varrer a pasta de instalação do Firebird por diretórios Firebird_* e ler RemoteServicePort de cada firebird.conf | arquivo de configuração versionado do harness; automático com override | usuário escolheu A, zero configuração (P-19)
+D-32 | Credenciais do banco temporário: SYSDBA com a senha padrão, assumida como masterkey | pedir as senhas ao usuário; ler de variável de ambiente obrigatória | usuário mandou usar as default (P-20); ver PENDENTE-02, que trata do 4.0/5.0
+D-33 | Nenhuma credencial real é versionada; o .ini gerado pelo harness é temporário e apagado ao fim | versionar config.ini de teste | política de segurança; coerente com D-26
+D-34 | Logar via TGravarLog todos os novos caminhos: qual arquivo INI foi resolvido, chamada de Reconectar, e criação/descarte de conexão no pool | manter o log apenas na falha de conexão | usuário pediu logar tudo (P-16, eixo de observabilidade)
+D-35 | Ambiente de build confirmado na F3: Delphi 10.4 em Studio 21.0, com dcc32.exe, rsvars.bat, MSBuild v4.0.30319 e DUnitX em source/DUnitX; o .bat de build usa rsvars.bat + MSBuild | assumir caminhos sem verificar; usar dcc32 direto | verificado em disco durante a F3; confirma a viabilidade de D-03/D-04
+D-36 | Premissa de D-32 CONFIRMADA empiricamente na F3: SYSDBA/masterkey cria banco com sucesso nas três instâncias (2.5 porta 3050, 4.0 porta 3051, 5.0 porta 3052), validado com isql.exe de cada versão criando e apagando .fdb temporário | manter masterkey como premissa não verificada | teste executado na F3; encerra PENDENTE-02
+D-37 | O harness monta o caminho do banco temporário com barra normal e o formato localhost/PORTA:C:/caminho/arquivo.fdb; caminhos com barra invertida em string são proibidos no gerador de script SQL | usar barra invertida no caminho | verificado na F3: barra invertida seguida de letra vira escape (\t virou tabulação) e quebra a criação do banco
+D-38 | T-02.07 (A-05) e T-02.11 (D-20) são dispensadas de ter teste funcional que reprove o código atual; nelas a verificação é não-regressão da suíte mais inspeção estrutural binária no criterio_aceite | exigir teste discriminante como nas demais tasks; tirar as duas do escopo da sprint | três rodadas de auditoria reprovaram essas duas tasks alternando entre teste que não discrimina e teste que não executa; o efeito de ambas não é observável em runtime — A-05 corrige a estrutura de um try/finally cujo caminho de sucesso já funciona, e D-20 remove campos de record que nenhuma unit lê. Registrado como exceção explícita e localizada à regra de TDD, limitada a estas duas tasks
+```
+
+## Pendências
+
+```
+PENDENTE-01 | Quais projetos, além do AFSelf, consomem esta lib e implementam iConnection por conta própria? | trava: nada nesta sprint — D-10 decidiu seguir e corrigir os quebrados depois. (NÃO BLOQUEANTE, autorizado pelo usuário em P-14.) Se existir implementação externa de iConnection, ela não compilará com os métodos novos de D-09/D-15 e precisará de ajuste fora desta sprint. Lacuna L-08.
+PENDENTE-02 | RESOLVIDA na F3 por verificação empírica — ver D-36. A senha SYSDBA/masterkey funciona nas três instâncias (2.5, 4.0 e 5.0) desta máquina. O override por variável de ambiente permanece no plano como mecanismo de portabilidade para outras máquinas, não como contorno de pendência.
+```

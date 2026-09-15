@@ -8,8 +8,6 @@ type
     UserName : String;
     PassWord : String;
     Timer : Integer;
-    Usuario : String;
-    Senha : String;
     Porta : Integer;
     HostName : String;
     Dialect  : Integer;

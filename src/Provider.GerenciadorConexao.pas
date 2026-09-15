@@ -22,7 +22,8 @@ uses
   System.Classes,
   Provider.Interfaces,
   Provider.Conexao,
-  FireDAC.Comp.Client, Data.DB;
+  FireDAC.Comp.Client, Data.DB,
+  GravarLog;
 
 type
   { Item mantido no pool: uma conexão Firebird por thread }
@@ -64,12 +65,16 @@ type
     constructor Create(const ATag: String; AMaxIdleSegundos: Integer);
     destructor Destroy; override;
     function Connection: TCustomConnection;
+    function ArquivoConfiguracao(const AValue: String): iConnection; overload;
+    function ArquivoConfiguracao: String; overload;
+    function Reconectar: iConnection;
   end;
 
 implementation
 
 uses
-  System.DateUtils;
+  System.DateUtils,
+  Provider.Excecoes;
 
 { TThreadLimpeza }
 
@@ -171,21 +176,74 @@ begin
       FPool.Remove(LThreadID);
     end;
 
-    { Nova conexão para esta thread.
-      TConnection.New e .Connection() são chamados sem modificação alguma. }
-    LItem         := TItemConexao.Create;
-    LItem.Conexao := TConnection.New(FTag);
-    LConn         := LItem.Conexao.Connection;
-    if Assigned(LConn) then
-      LItem.FDConn := LConn as TFDConnection
-    else
-      LItem.FDConn := nil;
+    { Nova conexao para esta thread.
+
+      A-02: a criacao vai dentro de try/except porque TConnection.Connection
+      levanta excecao em vez de devolver nil. Sem isso, a excecao subia entre
+      o TItemConexao.Create e o FPool.Add, e o item recem-criado nunca era
+      adicionado ao pool nem liberado - vazava a cada tentativa falha. }
+    LItem := TItemConexao.Create;
+    try
+      LItem.Conexao := TConnection.New(FTag);
+      LConn         := LItem.Conexao.Connection;
+      LItem.FDConn  := LConn as TFDConnection;
+    except
+      LItem.Conexao := nil;
+      LItem.Free;
+      raise;   { repropaga a excecao original, sem mascarar a causa }
+    end;
     LItem.UltimoUso := Now;
     FPool.Add(LThreadID, LItem);
+    TGravarLog.New.doSaveLog(Format('Pool: conexao criada para a thread %d (TAG "%s")',
+      [LThreadID, FTag]));
     Result := LItem.FDConn;
   finally
     FLock.Leave;
   end;
+end;
+
+function TGerenciadorConexao.ArquivoConfiguracao(const AValue: String): iConnection;
+begin
+  { O pool nao guarda configuracao propria: cada TConnection do pool resolve o
+    seu arquivo. Definir aqui valeria so para as conexoes criadas a seguir, o
+    que seria uma armadilha - por isso o pool recusa a chamada. }
+  Result := Self;
+  raise EConnectionException.Create(
+    'TGerenciadorConexao nao aceita arquivo de configuracao explicito; ' +
+    'use TConnection diretamente quando precisar escolher o arquivo.');
+end;
+
+function TGerenciadorConexao.ArquivoConfiguracao: String;
+var
+  LConnAux : iConnection;
+begin
+  { Resolve pela mesma regra que as conexoes do pool usarao. }
+  LConnAux := TConnection.New(FTag);
+  Result   := LConnAux.ArquivoConfiguracao;
+end;
+
+function TGerenciadorConexao.Reconectar: iConnection;
+var
+  LThreadID : Cardinal;
+  LItem     : TItemConexao;
+begin
+  Result    := Self;
+  LThreadID := TThread.CurrentThread.ThreadID;
+  FLock.Enter;
+  try
+    if FPool.TryGetValue(LThreadID, LItem) then
+    begin
+      LItem.Conexao := nil;
+      LItem.Free;
+      FPool.Remove(LThreadID);
+      TGravarLog.New.doSaveLog(
+        Format('Pool: conexao descartada por Reconectar na thread %d (TAG "%s")',
+          [LThreadID, FTag]));
+    end;
+  finally
+    FLock.Leave;
+  end;
+  Connection;   { recria ja com a configuracao relida }
 end;
 
 procedure TGerenciadorConexao.LimparInativas;
@@ -210,6 +268,9 @@ begin
         LItem.Conexao := nil;   { fecha a conexão Firebird }
         LItem.Free;
         FPool.Remove(LThreadID);
+        TGravarLog.New.doSaveLog(
+          Format('Pool: conexao descartada por inatividade na thread %d (TAG "%s")',
+            [LThreadID, FTag]));
       end;
     finally
       FLock.Leave;

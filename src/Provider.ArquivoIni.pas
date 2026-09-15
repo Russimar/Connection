@@ -97,6 +97,10 @@ var
   LPartes         : TStringPartes;
   LPortaCandidata : Integer;
 begin
+  { A-05: record inicializado por inteiro antes de qualquer leitura. Sem isso,
+    os campos numericos ficavam com lixo de pilha ate serem atribuidos. }
+  DadosConexao := Default(TDadosConexao);
+
   ArquivoIni := ExtractFilePath(ParamStr(0)) + FNomeArquivo;
   if not FileExists(ArquivoIni) then
     raise Exception.CreateFmt('Arquivo de configuração não encontrado: %s', [ArquivoIni]);
@@ -152,13 +156,20 @@ begin
     DadosConexao.Porta        := LPorta;
     DadosConexao.UserName     := Configuracoes.ReadString(FTag, 'UserName', '');
     DadosConexao.PassWord     := Configuracoes.ReadString(FTag, 'PassWord', '');
+    { R-02: usaCriptografia=S aciona apenas decodificacao Base64, NAO
+      criptografia. Base64 e ofuscacao reversivel por qualquer um que tenha o
+      arquivo - o .ini nao deve ser tratado como seguro nem versionado. O nome
+      da chave e historico e foi mantido para nao quebrar INIs existentes. }
     if Configuracoes.ReadString(FTag, 'usaCriptografia', '') = 'S' then
       DadosConexao.PassWord   := Descriptografar(DadosConexao.PassWord);
     DadosConexao.Timer        := StrToIntDef(Configuracoes.ReadString(FTag, 'Tempo', '10000'), 10000);
     DadosConexao.Dialect      := Configuracoes.ReadInteger(FTag, 'Dialect', 3);
     DadosConexao.CharacterSet := Configuracoes.ReadString(FTag, 'CharacterSet', 'WIN1252');
+    { A-05: o resultado e atribuido no caminho de SUCESSO. Antes ficava no
+      finally, que executa tambem no caminho de excecao, devolvendo um record
+      nunca preenchido. }
+    Result := DadosConexao;
   finally
-    BuscarParametro := DadosConexao;
     Configuracoes.Free;
   end;
 end;
