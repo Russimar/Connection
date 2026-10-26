@@ -1,11 +1,11 @@
 {
 	"name": "Connection",
 	"description": "",
-	"version": "1.0.9",
+	"version": "1.0.10",
 	"homepage": "",
 	"mainsrc": "./src",
 	"projects": [],
 	"dependencies": {
-		"github.com/russimar/log": "^v1.0.2"
+		"github.com/russimar/log": "^v1.0.10"
 	}
 }

@@ -27,7 +27,8 @@ uses
   System.Generics.Collections,
   Provider.DadosConexao,
   Provider.ArquivoIni,
-  GravarLog;
+  GravarLog.Manager,
+  GravarLog.Utils;
 
 type
   TConnection = class(TInterfacedObject, iConnection)
@@ -85,7 +86,8 @@ function TConnection.Reconectar: iConnection;
 begin
   Result := Self;
   FConn.Connected := False;
-  TGravarLog.New.doSaveLog(Format('Reconectar solicitado na TAG "%s"', [FTag]));
+  TGravarLogManager.GetInstance.doSaveLog(nlNormal,
+    Format('Reconectar solicitado na TAG "%s"', [FTag]), ltInfo);
   Connection;
 end;
 
@@ -97,8 +99,14 @@ begin
                      .Tag(FTag)
                      .BuscarParametro;
 
-  TGravarLog.New.doSaveLog(Format('TAG "%s": configuracao lida de %s',
-    [FTag, Self.ArquivoConfiguracao]));
+  { Log pelo TGravarLogManager: a mensagem entra numa fila e UMA thread grava
+    o arquivo, engolindo falha de I/O. TGravarLog.New.doSaveLog gravava direto
+    (AssignFile/Append, sem trava): duas threads conectando juntas colidiam no
+    arquivo e o EInOutError "I/O error 32" subia de dentro de Connection -
+    a conexao falhava por causa do log. Ver Teste.Conexao.LogConcorrente. }
+  TGravarLogManager.GetInstance.doSaveLog(nlNormal,
+    Format('TAG "%s": configuracao lida de %s', [FTag, Self.ArquivoConfiguracao]),
+    ltInfo);
 
   FConn.Params.Clear;
   FConn.DriverName                 := 'FB';
@@ -135,7 +143,8 @@ begin
     on E : Exception do
     begin
       FConn.Connected := False;
-      TGravarLog.New.doSaveLog(E.Message + ' - ' + DadosConexao.DataBase);
+      TGravarLogManager.GetInstance.doSaveLog(nlNormal,
+        E.Message + ' - ' + DadosConexao.DataBase, ltError);
       raise EConnectionException.CreateFmt('Falha ao conectar em "%s": %s',
         [DadosConexao.DataBase, E.Message], FTag, Self.ArquivoConfiguracao,
         DadosConexao.DataBase);

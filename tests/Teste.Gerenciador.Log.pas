@@ -4,7 +4,10 @@ unit Teste.Gerenciador.Log;
 
   TGravarLog escreve em <pasta do executavel>\Log\<data>.txt. O teste cria uma
   conexao real pelo pool e depois forca o descarte por Reconectar, entao le o
-  arquivo de log e exige uma linha para cada evento, com o id da thread. }
+  arquivo de log e exige uma linha para cada evento, com o id da thread.
+
+  O log passa pela fila do TGravarLogManager (gravacao assincrona): o teste
+  espera as linhas aparecerem, com prazo, em vez de ler uma vez so. }
 
 interface
 
@@ -25,6 +28,7 @@ uses
   System.SysUtils,
   System.IOUtils,
   System.Classes,
+  System.Diagnostics,
   Provider.Interfaces,
   Provider.GerenciadorConexao,
   Teste.Ambiente,
@@ -35,7 +39,8 @@ function LerLogDoDia: String;
 var
   LPasta   : String;
   LArquivo : String;
-  LLinhas  : TStringList;
+  LStream  : TFileStream;
+  LLeitor  : TStreamReader;
 begin
   Result := EmptyStr;
   LPasta := TPath.Combine(ExtractFilePath(ParamStr(0)), 'Log');
@@ -43,14 +48,44 @@ begin
     Exit;
   for LArquivo in TDirectory.GetFiles(LPasta, '*.txt') do
   begin
-    LLinhas := TStringList.Create;
+    { fmShareDenyNone: a thread do Manager pode estar gravando agora. }
+    LStream := TFileStream.Create(LArquivo, fmOpenRead or fmShareDenyNone);
     try
-      LLinhas.LoadFromFile(LArquivo);
-      Result := Result + LLinhas.Text;
+      LLeitor := TStreamReader.Create(LStream, TEncoding.ANSI);
+      try
+        Result := Result + LLeitor.ReadToEnd;
+      finally
+        LLeitor.Free;
+      end;
     finally
-      LLinhas.Free;
+      LStream.Free;
     end;
   end;
+end;
+
+{ Le o log ate todos os trechos aparecerem ou o prazo acabar; devolve o que
+  leu por ultimo (o Assert do chamador mostra o que faltou). }
+function EsperarLog(const ATrechos: array of String; APrazoMs: Integer): String;
+var
+  LCron    : TStopwatch;
+  LTrecho  : String;
+  LTodos   : Boolean;
+begin
+  LCron := TStopwatch.StartNew;
+  repeat
+    try
+      Result := LerLogDoDia;
+    except
+      Result := EmptyStr;   { arquivo sendo criado agora: tenta de novo }
+    end;
+    LTodos := True;
+    for LTrecho in ATrechos do
+      if not Result.Contains(LTrecho) then
+        LTodos := False;
+    if LTodos then
+      Exit;
+    Sleep(50);
+  until LCron.ElapsedMilliseconds > APrazoMs;
 end;
 
 { TTesteGerenciadorLog }
@@ -80,8 +115,9 @@ begin
         LGer.Connection;      { gera a linha de criacao }
         LGer.Reconectar;      { gera a linha de descarte }
 
-        LLog      := LerLogDoDia;
         LIdThread := IntToStr(TThread.CurrentThread.ThreadID);
+        LLog      := EsperarLog(['Pool: conexao criada', 'Pool: conexao descartada',
+          LIdThread], 5000);
 
         Assert.IsTrue(LLog.Contains('Pool: conexao criada'),
           'O log deveria registrar a criacao de conexao no pool');

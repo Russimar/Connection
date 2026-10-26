@@ -23,7 +23,10 @@ uses
   Provider.Interfaces,
   Provider.Conexao,
   FireDAC.Comp.Client, Data.DB,
-  GravarLog;
+  { Log pela fila do Manager, como em Provider.Conexao: gravacao direta de
+    duas threads no mesmo arquivo levantava EInOutError. }
+  GravarLog.Manager,
+  GravarLog.Utils;
 
 type
   { Item mantido no pool: uma conexão Firebird por thread }
@@ -194,8 +197,9 @@ begin
     end;
     LItem.UltimoUso := Now;
     FPool.Add(LThreadID, LItem);
-    TGravarLog.New.doSaveLog(Format('Pool: conexao criada para a thread %d (TAG "%s")',
-      [LThreadID, FTag]));
+    TGravarLogManager.GetInstance.doSaveLog(nlNormal,
+      Format('Pool: conexao criada para a thread %d (TAG "%s")',
+        [LThreadID, FTag]), ltInfo);
     Result := LItem.FDConn;
   finally
     FLock.Leave;
@@ -236,9 +240,9 @@ begin
       LItem.Conexao := nil;
       LItem.Free;
       FPool.Remove(LThreadID);
-      TGravarLog.New.doSaveLog(
+      TGravarLogManager.GetInstance.doSaveLog(nlNormal,
         Format('Pool: conexao descartada por Reconectar na thread %d (TAG "%s")',
-          [LThreadID, FTag]));
+          [LThreadID, FTag]), ltInfo);
     end;
   finally
     FLock.Leave;
@@ -268,9 +272,9 @@ begin
         LItem.Conexao := nil;   { fecha a conexão Firebird }
         LItem.Free;
         FPool.Remove(LThreadID);
-        TGravarLog.New.doSaveLog(
+        TGravarLogManager.GetInstance.doSaveLog(nlNormal,
           Format('Pool: conexao descartada por inatividade na thread %d (TAG "%s")',
-            [LThreadID, FTag]));
+            [LThreadID, FTag]), ltInfo);
       end;
     finally
       FLock.Leave;

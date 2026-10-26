@@ -21,7 +21,8 @@ uses
   Teste.Excecoes in 'Teste.Excecoes.pas',
   Teste.Conexao in 'Teste.Conexao.pas',
   Teste.ArquivoIni.Resultado in 'Teste.ArquivoIni.Resultado.pas',
-  Teste.Gerenciador.Log in 'Teste.Gerenciador.Log.pas';
+  Teste.Gerenciador.Log in 'Teste.Gerenciador.Log.pas',
+  Teste.Conexao.LogConcorrente in 'Teste.Conexao.LogConcorrente.pas';
 
 var
   LRunner   : ITestRunner;
